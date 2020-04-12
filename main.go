@@ -1,16 +1,19 @@
 package main
 
-// https://stackoverflow.com/questions/11268943/is-it-possible-to-capture-a-ctrlc-signal-and-run-a-cleanup-function-in-a-defe
+// https://golangcode.com/handle-ctrl-c-exit-in-terminal/
 
 import (
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
+	"syscall"
 )
 
 func main() {
+
 	if (len(os.Args)) < 2 {
 		log.Fatalln("请输入下载地址")
 	}
@@ -25,6 +28,15 @@ func main() {
 	if err != nil {
 		log.Fatalln("创建文件失败:", err)
 	}
+
+	// ctrl + c handler
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		os.Remove(tempName)
+		os.Exit(0)
+	}()
 
 	res, err := http.Get(target)
 
