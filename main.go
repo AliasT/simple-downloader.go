@@ -37,6 +37,7 @@ func main() {
 
 	res, err := http.Get(target)
 	if err != nil {
+		os.Remove(tempName)
 		log.Fatalln("网络请求失败:", err)
 	}
 
