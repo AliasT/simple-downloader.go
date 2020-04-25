@@ -3,7 +3,8 @@ package main
 // https://golangcode.com/handle-ctrl-c-exit-in-terminal/
 
 import (
-	"io"
+	"fmt"
+	. "io"
 	"log"
 	"net/http"
 	"os"
@@ -36,12 +37,43 @@ func main() {
 	}()
 
 	res, err := http.Get(target)
+
 	if err != nil {
 		os.Remove(tempName)
 		log.Fatalln("网络请求失败:", err)
 	}
 
 	defer res.Body.Close()
-	io.Copy(tmp, res.Body)
+	copy(tmp, res.Body)
 	os.Rename(tempName, name)
+}
+
+// CopyBuffer copy from std copyBuffer
+func copy(dst Writer, src Reader) (written int64, err error) {
+	buf := make([]byte, 32*1024)
+	for {
+		nr, er := src.Read(buf)
+		if nr > 0 {
+			nw, ew := dst.Write(buf[0:nr])
+			if nw > 0 {
+				written += int64(nw)
+				fmt.Print("\r", written)
+			}
+			if ew != nil {
+				err = ew
+				break
+			}
+			if nr != nw {
+				err = ErrShortWrite
+				break
+			}
+		}
+		if er != nil {
+			if er != EOF {
+				err = er
+			}
+			break
+		}
+	}
+	return written, err
 }
